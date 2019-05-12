@@ -1,0 +1,6 @@
+1.runloop怎样做到有事做事，没事休息;
+用户态到内核态，内核态到用户态的转换。
+2.怎样保证子线程数据回来更新UI的时候，不打断用户的滑动操作
+第一点：tableView在滑动，处于UITrackingRunloopMode模式下。
+第二点：子线程请求的数据，那么在和主线程处理的时候，我们将更新的逻辑加载defaultMode下。那么defaultMode下的操作是不会执行的。
+第三点：滑动结束了，runloop由UITrackingRunloopMode又回到defaultMode下了，那么defaultMode下的更新操作就能执行了
