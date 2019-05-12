@@ -2,41 +2,54 @@
 //  MusicViewModel.m
 //  iOS_Review
 //
-//  Created by 王文凯 on 2019/5/12.
-//  Copyright © 2019年 王文凯. All rights reserved.
+//  Created by Kevin on 2019/5/12.
+//  Copyright © 2019年 Kevin. All rights reserved.
 //
 
 #import "MusicViewModel.h"
 #import "Model.h"
+
+@interface MusicViewModel ()<UITableViewDelegate,UITableViewDataSource>
+@property(nonatomic,strong)RACSignal *sendDataSignal;
+@end
+
 @implementation MusicViewModel
 - (instancetype)init {
     if (self = [super init]) {
-        [self setUpCommand];
+        [self initAllComponents];
     }
     return self;
 }
-- (void)setUpCommand {
-    @weakify(self)
-    _command = [[RACCommand alloc] initWithSignalBlock:^RACSignal *(id input) {
-       return [RACSignal createSignal:^RACDisposable *(id<RACSubscriber> subscriber) {
-           @strongify(self)
-           [[HttpManager shared] GET:@"" success:^(id response) {
-               [self.listData removeAllObjects];
-               [self.listData addObjectsFromArray:[Model paresRespondsData:response]];
-               [subscriber sendNext:self.listData];
-               [subscriber sendCompleted];
-           } failure:^(NSError *error) {
-               
-           }];
-           return nil;
-       }];
-        
-    }];
+- (void)initAllComponents {
+    _listData = [[NSMutableArray alloc] init];
 }
-- (NSMutableArray *)listData {
-    if (!_listData) {
-        _listData = [[NSMutableArray alloc] init];
+- (RACCommand *)sendDatacommand {
+    if (!_sendDatacommand) {
+        @weakify(self)
+        _sendDatacommand = [[RACCommand alloc] initWithSignalBlock:^RACSignal *(id input) {
+            @strongify(self)
+            return self.sendDataSignal;
+        }];
     }
-    return _listData;
+    return _sendDatacommand;
+}
+- (RACSignal *)sendDataSignal {
+    if (!_sendDataSignal) {
+        @weakify(self)
+        _sendDataSignal = [RACSignal createSignal:^RACDisposable *(id<RACSubscriber> subscriber) {
+            @strongify(self)
+            [[HttpManager shared] GET:@"http://wawa.fm:9090/wawa/api.php/document/getDocumentByCategory" success:^(id response) {
+                [self.listData removeAllObjects];
+                [self.listData addObjectsFromArray:[Model paresRespondsData:response]];
+                [subscriber sendNext:self.listData];
+                [subscriber sendCompleted];
+            } failure:^(NSError *error) {
+                [subscriber sendError:error];
+                [subscriber sendCompleted];
+            }];
+            return nil;
+        }];
+    }
+    return _sendDataSignal;
 }
 @end
